@@ -44,9 +44,17 @@
      Cada elemento com data-img só recebe a foto DEPOIS que ela carrega.
      Se o arquivo ainda não existe, o gradiente do CSS permanece — nada quebra.
      Basta jogar as fotos em assets/img/ com os nomes indicados no HTML. */
+  var pendentes = 0, percorrendo = true;
+
+  function encerrou() {
+    if (percorrendo || pendentes > 0) return;
+    document.dispatchEvent(new CustomEvent('imagens:prontas'));
+  }
+
   document.querySelectorAll('[data-img]').forEach(function (el) {
     var src = el.getAttribute('data-img');
     if (!src) return;
+    pendentes++;
     var probe = new Image();
     probe.onload = function () {
       var current = getComputedStyle(el).backgroundImage;
@@ -55,13 +63,18 @@
       // data-pos permite reenquadrar fotos verticais em slots horizontais
       el.style.backgroundPosition = el.getAttribute('data-pos') || 'center';
       el.classList.add('has-img');
+      pendentes--; encerrou();
     };
     // Na galeria, quadro sem foto some em vez de virar bloco verde vazio.
     probe.onerror = function () {
       if (el.classList.contains('gallery__item')) el.remove();
+      pendentes--; encerrou();
     };
     probe.src = src;
   });
+
+  percorrendo = false;
+  encerrou();
 
   /* ---------- Reveal on scroll ---------- */
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -81,6 +94,73 @@
 
     items.forEach(function (el) { io.observe(el); });
   }
+
+  /* ---------- Slideshow do hero ----------
+     Só entram no rodízio as fotos que realmente carregaram (classe .has-img),
+     então trocar/remover um arquivo em assets/img/ não quebra nada. */
+  (function heroSlideshow() {
+    var slides = [].slice.call(document.querySelectorAll('.hero__slide'));
+    if (!slides.length) return;
+
+    var INTERVALO = 7000;   // tempo de cada foto
+    var FADE = 2000;        // duracao do crossfade (igual ao CSS)
+    var atual = 0, timer = null, vivos = [];
+
+    function mostrar(i) {
+      vivos.forEach(function (s, n) {
+        if (n === i) {
+          s.classList.remove('is-leaving');
+          s.classList.add('is-active');
+        } else if (s.classList.contains('is-active')) {
+          s.classList.remove('is-active');
+          s.classList.add('is-leaving');
+          // Só encerra a animação depois que a foto já sumiu de vez.
+          setTimeout(function () {
+            if (!s.classList.contains('is-active')) s.classList.remove('is-leaving');
+          }, FADE);
+        }
+      });
+      atual = i;
+    }
+
+    function proximo() { mostrar((atual + 1) % vivos.length); }
+
+    // O rodizio roda mesmo com "reduzir animacoes" ligado no sistema: trocar a
+    // foto e um crossfade, nao movimento. Quem desliga so perde o zoom/pan,
+    // que e o que de fato incomoda quem tem sensibilidade a movimento (o CSS
+    // corta a animacao kenburns via @media prefers-reduced-motion).
+    function agendar() {
+      clearInterval(timer);
+      if (vivos.length > 1) timer = setInterval(proximo, INTERVALO);
+    }
+
+    var montado = false;
+
+    function montar() {
+      if (montado) return;
+      montado = true;
+
+      vivos = slides.filter(function (s) { return s.classList.contains('has-img'); });
+
+      // Nenhuma foto disponível: deixa o gradiente do CSS assumir.
+      if (!vivos.length) return;
+
+      slides.forEach(function (s) { if (vivos.indexOf(s) === -1) s.remove(); });
+
+      mostrar(0);
+      agendar();
+    }
+
+    // Monta quando todas as fotos terminarem de carregar (ou falhar).
+    document.addEventListener('imagens:prontas', montar);
+    // Rede muito lenta: não deixa o hero preso no gradiente para sempre.
+    setTimeout(montar, 4000);
+
+    // Aba em segundo plano não precisa girar foto.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) clearInterval(timer); else agendar();
+    });
+  })();
 
   /* ---------- Parallax suave no hero ---------- */
   var heroBg = document.querySelector('.hero__bg');

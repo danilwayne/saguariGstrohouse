@@ -182,9 +182,42 @@ em{font-style:italic;color:var(--gold-500)}
   transform:scale(1.06);
   will-change:transform;
 }
+
+/* --- Slideshow do hero: crossfade + zoom lento (Ken Burns) --- */
+.hero__slide{
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;
+  opacity:0;
+  transition:opacity 2s var(--ease);
+  will-change:opacity, transform;
+}
+/* A foto que sai MANTEM a animacao rodando enquanto some (.is-leaving).
+   Sem isso o zoom trava no meio do crossfade e da um tranco visivel. */
+.hero__slide.is-active{opacity:1}
+.hero__slide.is-leaving{opacity:0}
+
+/* Duracao (13s) maior que ciclo + fade (7s + 2s): o movimento nunca
+   "estaciona" antes da troca. Cada foto ganha um movimento diferente,
+   entao o rodizio nao fica com cara de repeticao. */
+.hero__slide.is-active,
+.hero__slide.is-leaving{animation:kb-in 13s linear forwards}
+.hero__slide:nth-child(2).is-active,
+.hero__slide:nth-child(2).is-leaving{animation-name:kb-out}
+.hero__slide:nth-child(3).is-active,
+.hero__slide:nth-child(3).is-leaving{animation-name:kb-left}
+.hero__slide:nth-child(4).is-active,
+.hero__slide:nth-child(4).is-leaving{animation-name:kb-right}
+
+@keyframes kb-in   {from{transform:scale(1.02)}            to{transform:scale(1.16)}}
+@keyframes kb-out  {from{transform:scale(1.16)}            to{transform:scale(1.02)}}
+@keyframes kb-left {from{transform:scale(1.14) translateX(2%)}  to{transform:scale(1.14) translateX(-2%)}}
+@keyframes kb-right{from{transform:scale(1.14) translateX(-2%)} to{transform:scale(1.14) translateX(2%)}}
 .hero__veil{
   position:absolute;inset:0;
   background:
+    /* Faixa escura a esquerda: garante contraste do titulo em QUALQUER foto
+       do rodizio, inclusive nas claras (a da picanha estourava o subtitulo). */
+    linear-gradient(to right, rgba(7,26,16,.88) 0%, rgba(7,26,16,.6) 42%, rgba(7,26,16,.1) 78%, rgba(7,26,16,0) 100%),
     linear-gradient(to bottom, rgba(7,26,16,.55) 0%, rgba(7,26,16,.35) 45%, rgba(7,26,16,.96) 100%);
 }
 .hero__content{
@@ -539,6 +572,9 @@ em{font-style:italic;color:var(--gold-500)}
   *{animation:none!important;transition-duration:.01ms!important}
   .reveal{opacity:1;transform:none}
   html{scroll-behavior:auto}
+  /* Excecao: o hero continua trocando de foto. Sem zoom e sem deslocamento
+     (a regra * ja matou a animacao), so o crossfade — que nao e movimento. */
+  .hero__slide{transition-duration:1.2s!important}
 }
 
 /* =========================================================
