@@ -1,0 +1,9 @@
+# Demonstracao aguardando aprovacao do cliente.
+# Enquanto o site nao for oficializado, ele NAO deve ser indexado pelo Google:
+# evita competir com a ficha do Google Meu Negocio do proprio restaurante.
+#
+# QUANDO O CLIENTE APROVAR: apagar as duas linhas abaixo e remover a tag
+# <meta name="robots" content="noindex, nofollow"> do index.html
+
+User-agent: *
+Disallow: /

@@ -1,0 +1,8 @@
+# Pasta de trabalho: originais baixados antes de renomear.
+# Nao vai pro site publicado (as fotos finais estao em assets/img/).
+assets/img/_baixadas/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
